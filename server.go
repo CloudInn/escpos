@@ -4,10 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
-
-	"github.com/moovweb/gokogiri"
 )
 
 const (
@@ -74,43 +71,8 @@ func (s *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// grab posted body
-	body, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-	defer req.Body.Close()
-
-	// parse xml with gokogiri
-	doc, err := gokogiri.ParseXml(body)
-	if err != nil {
-		http.Error(res, "cannot load XML", http.StatusBadRequest)
-		return
-	}
-	defer doc.Free()
-
-	// load print nodes from xml doc
-	nodes, err := getBodyChildren(doc)
-	if err != nil {
-		http.Error(res, "cannot find SOAP request Body", http.StatusBadRequest)
-		return
-	}
-
 	// init printer
 	s.p.Init()
-
-	// loop over nodes
-	for _, n := range nodes {
-		// grab parameters
-		params := make(map[string]string)
-		for _, attr := range n.Attributes() {
-			params[attr.Name()] = attr.Value()
-		}
-
-		// write data to printer
-		s.p.WriteNode(n.Name(), params, n.Content())
-	}
 
 	// end
 	s.p.End()
